@@ -124,7 +124,21 @@ async def delete_history(search_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     
+@router.delete("/history/all")
+async def delete_all_history():
 
+    try:
+        
+        supabase.table("weather_results").delete().neq("search_id", -1).execute()
+        
+        supabase.table("weather_searches").delete().neq("id", -1).execute()
+
+        return {
+            "message": "All searches and results deleted successfully"
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
 @router.get("/history/search/country")
@@ -327,14 +341,14 @@ async def search_history_by_zipcode(
             supabase
             .table("weather_searches")
             .select("*")
-            .ilike("zipcode", f"%{zipcode}%")
+            .ilike("zip_code", f"%{zipcode}%")
             .execute()
         )
 
         if not searches_response.data:
             return {
                 "total": 0,
-                "filter": {"zipcode": zipcode},
+                "filter": {"zip_code": zipcode},
                 "searches": []
             }
 
@@ -353,7 +367,7 @@ async def search_history_by_zipcode(
                 "city": search["city"],
                 "state": search["state"],
                 "country": search["country"],
-                "zipcode": search.get("zipcode"),
+                "zip_code": search.get("zip_code"),
                 "coordinates": {
                     "lat": search["lat"],
                     "lon": search["lon"]
@@ -389,12 +403,12 @@ from app.Schemas.WeatherSchemas import WeatherSearchUpdate
 @router.put("/history/{search_id}")
 async def update_history(search_id: int, updates: WeatherSearchUpdate):
     try:
-        # Vérifier que la recherche existe
+        
         search_response = supabase.table("weather_searches").select("*").eq("id", search_id).execute()
         if not search_response.data:
             raise HTTPException(status_code=404, detail=f"Search with id {search_id} not found")
 
-        # Construire le dict des champs à mettre à jour
+        
         update_data = {}
 
         if updates.city is not None:
@@ -410,7 +424,7 @@ async def update_history(search_id: int, updates: WeatherSearchUpdate):
         if updates.lon is not None:
             update_data["lon"] = updates.lon
 
-        # Validation directe des dates
+        
         if updates.start_date is not None:
             try:
                 dt = datetime.fromisoformat(updates.start_date)
@@ -436,7 +450,7 @@ async def update_history(search_id: int, updates: WeatherSearchUpdate):
         if not update_data:
             raise HTTPException(status_code=400, detail="No fields to update")
 
-        # Faire la mise à jour
+        
         updated_response = supabase.table("weather_searches").update(update_data).eq("id", search_id).execute()
         if not updated_response.data:
             raise HTTPException(status_code=500, detail="Update failed")
