@@ -44,12 +44,6 @@ async def get_coords_by_city(
             raise HTTPException(status_code=404, detail="City not found")
         
 
-    #     if data[0]["country"] != country.upper():
-    #         raise HTTPException(
-    #     status_code=404,
-    #     detail="City not found in specified country"
-    # )
-
         return {
             "city": data[0]["name"],
             "state": data[0].get("state"),
